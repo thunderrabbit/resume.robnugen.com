@@ -17,7 +17,7 @@ class Config
     public string $app_path = '/home/user/sub.domain.com';
 
     public string $dbHost = "eich";
+    public string $dbName = "";
     public string $dbUser = "";
     public string $dbPass = "";
-    public string $dbName = "";
 }
