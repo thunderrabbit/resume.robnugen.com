@@ -77,16 +77,17 @@ class CookieRepository
 
     /**
      * The user a presented cookie belongs to, or 0 when it is unknown, was
-     * issued to a different IP or browser, or has expired.
+     * issued to a different browser, or has expired. The IP is not checked:
+     * phones and laptops change networks, and that logged people out.
      */
-    public function findUserId(string $cookie_hash, string $ip_bin, string $user_agent_md5): int
+    public function findUserId(string $cookie_hash, string $user_agent_md5): int
     {
         $stmt = $this->di_pdo->prepare(
             "SELECT `user_id` FROM `cookies`
-             WHERE `cookie` = ? AND `ip_address` = ? AND `user_agent_md5` = ? AND `expires_at` > ?
+             WHERE `cookie` = ? AND `user_agent_md5` = ? AND `expires_at` > ?
              LIMIT 1"
         );
-        $stmt->execute([$cookie_hash, $ip_bin, $user_agent_md5, $this->format($this->now)]);
+        $stmt->execute([$cookie_hash, $user_agent_md5, $this->format($this->now)]);
         $user_id = $stmt->fetchColumn();
         return $user_id === false ? 0 : (int) $user_id;
     }

@@ -40,7 +40,6 @@ class IsLoggedIn
 
         $found_user_id = $this->getUserIdForCookieInDatabase(
             cookie: $cookie,
-            ip_address: self::serverString('REMOTE_ADDR'),
             user_agent: self::serverString('HTTP_USER_AGENT')
         );
         if ($found_user_id <= 0) {
@@ -199,12 +198,10 @@ class IsLoggedIn
 
     private function getUserIdForCookieInDatabase(
         string $cookie,
-        string $ip_address,
         string $user_agent
     ): int {
         return $this->di_cookies->findUserId(
             cookie_hash: hash('sha256', $cookie),
-            ip_bin: \Auth\IPBin::ipToBinary($ip_address),
             user_agent_md5: md5($user_agent),
         );
     }

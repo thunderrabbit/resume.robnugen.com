@@ -69,28 +69,34 @@ class CookieRepositoryTest extends Unit
         return $count;
     }
 
-    public function testIssuedCookieIsFoundForTheSameIpAndBrowser(): void
+    public function testIssuedCookieIsFoundForTheSameBrowser(): void
     {
         $repo = $this->at(0);
         $repo->issue(7, 'hash-a', self::IP, self::UA, 30 * self::DAY);
-        $this->assertSame(7, $repo->findUserId('hash-a', self::IP, self::UA));
+        $this->assertSame(7, $repo->findUserId('hash-a', self::UA));
     }
 
-    public function testDifferentIpOrBrowserOrUnknownHashIsNobody(): void
+    public function testCookieKeepsWorkingFromAnotherIp(): void
+    {
+        $repo = $this->at(0);
+        $repo->issue(7, 'hash-a', "\x0A\x00\x00\x01", self::UA, 30 * self::DAY);
+        $this->assertSame(7, $repo->findUserId('hash-a', self::UA), 'the lookup never sees the IP');
+    }
+
+    public function testDifferentBrowserOrUnknownHashIsNobody(): void
     {
         $repo = $this->at(0);
         $repo->issue(7, 'hash-a', self::IP, self::UA, 30 * self::DAY);
-        $this->assertSame(0, $repo->findUserId('hash-a', "\x0A\x00\x00\x01", self::UA), 'other IP');
-        $this->assertSame(0, $repo->findUserId('hash-a', self::IP, str_repeat('0', 32)), 'other browser');
-        $this->assertSame(0, $repo->findUserId('hash-zzz', self::IP, self::UA), 'unknown');
+        $this->assertSame(0, $repo->findUserId('hash-a', str_repeat('0', 32)), 'other browser');
+        $this->assertSame(0, $repo->findUserId('hash-zzz', self::UA), 'unknown');
     }
 
     public function testCookieStopsWorkingWhenItExpires(): void
     {
         $this->at(0)->issue(7, 'hash-a', self::IP, self::UA, 30 * self::DAY);
-        $this->assertSame(7, $this->at(30 * self::DAY - 1)->findUserId('hash-a', self::IP, self::UA));
-        $this->assertSame(0, $this->at(30 * self::DAY)->findUserId('hash-a', self::IP, self::UA), 'at expiry');
-        $this->assertSame(0, $this->at(31 * self::DAY)->findUserId('hash-a', self::IP, self::UA), 'after');
+        $this->assertSame(7, $this->at(30 * self::DAY - 1)->findUserId('hash-a', self::UA));
+        $this->assertSame(0, $this->at(30 * self::DAY)->findUserId('hash-a', self::UA), 'at expiry');
+        $this->assertSame(0, $this->at(31 * self::DAY)->findUserId('hash-a', self::UA), 'after');
     }
 
     public function testIssuingPurgesExpiredRows(): void
@@ -107,8 +113,8 @@ class CookieRepositoryTest extends Unit
         $repo->issue(7, 'hash-a', self::IP, self::UA, self::DAY);
         $repo->issue(7, 'hash-b', self::IP, self::UA, self::DAY);
         $repo->revoke('hash-a');
-        $this->assertSame(0, $repo->findUserId('hash-a', self::IP, self::UA));
-        $this->assertSame(7, $repo->findUserId('hash-b', self::IP, self::UA));
+        $this->assertSame(0, $repo->findUserId('hash-a', self::UA));
+        $this->assertSame(7, $repo->findUserId('hash-b', self::UA));
     }
 
     public function testRevokeAllKeepsTheCookieInHand(): void
@@ -120,9 +126,9 @@ class CookieRepositoryTest extends Unit
         $repo->issue(9, 'someone-else', self::IP, self::UA, self::DAY);
 
         $this->assertSame(2, $repo->revokeAllForUser(7, 'laptop'));
-        $this->assertSame(7, $repo->findUserId('laptop', self::IP, self::UA), 'current browser stays in');
-        $this->assertSame(0, $repo->findUserId('phone', self::IP, self::UA));
-        $this->assertSame(9, $repo->findUserId('someone-else', self::IP, self::UA), 'other users untouched');
+        $this->assertSame(7, $repo->findUserId('laptop', self::UA), 'current browser stays in');
+        $this->assertSame(0, $repo->findUserId('phone', self::UA));
+        $this->assertSame(9, $repo->findUserId('someone-else', self::UA), 'other users untouched');
     }
 
     public function testRevokeAllWithoutAKeepSignsOutEverywhere(): void
@@ -153,7 +159,7 @@ class CookieRepositoryTest extends Unit
     {
         $repo = new \Database\CookieRepository($this->database(with_user_agent_column: false), $this->t0);
         $repo->issue(7, 'hash-a', self::IP, self::UA, self::DAY, self::PHONE);
-        $this->assertSame(7, $repo->findUserId('hash-a', self::IP, self::UA));
+        $this->assertSame(7, $repo->findUserId('hash-a', self::UA));
     }
 
     /**
@@ -206,10 +212,10 @@ class CookieRepositoryTest extends Unit
         $phone_id = $repo->listForUser(7, null)[0]->cookie_id;
 
         $this->assertFalse($repo->revokeDevice(9, $phone_id), 'not user 9\'s device');
-        $this->assertSame(7, $repo->findUserId('phone', self::IP, self::UA));
+        $this->assertSame(7, $repo->findUserId('phone', self::UA));
 
         $this->assertTrue($repo->revokeDevice(7, $phone_id));
-        $this->assertSame(0, $repo->findUserId('phone', self::IP, self::UA));
+        $this->assertSame(0, $repo->findUserId('phone', self::UA));
     }
 
     public function testTouchRecordsUseAtMostHourly(): void
