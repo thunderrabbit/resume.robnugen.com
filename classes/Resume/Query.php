@@ -24,6 +24,36 @@ final class Query
     ) {
     }
 
+    /**
+     * Builds a Query from GET parameters. Anything unparseable falls back to
+     * $today, and unknown tags are dropped, so a hand-edited URL never errors.
+     *
+     * @param array<mixed> $get
+     * @param list<string> $known_tags
+     */
+    public static function fromRequest(array $get, string $today, array $known_tags): self
+    {
+        $tags = [];
+        $raw_tags = $get['tags'] ?? [];
+        if (is_array($raw_tags)) {
+            foreach ($raw_tags as $tag) {
+                if (is_string($tag) && in_array($tag, $known_tags, true) && !in_array($tag, $tags, true)) {
+                    $tags[] = $tag;
+                }
+            }
+        }
+        return new self(
+            as_of: self::dateOr($get['as_of'] ?? null, $today),
+            wording_as_of: self::dateOr($get['wording_as_of'] ?? null, $today),
+            tags: $tags,
+        );
+    }
+
+    private static function dateOr(mixed $value, string $fallback): string
+    {
+        return is_string($value) && self::isDate($value) ? $value : $fallback;
+    }
+
     /** A real calendar date written as YYYY-MM-DD. */
     public static function isDate(mixed $value): bool
     {
