@@ -139,4 +139,39 @@ class ResumeBuilderTest extends Unit
         $doc = $this->build(['speaking', 'programming'], self::TODAY, self::TODAY, ['speaking', 'experience']);
         $this->assertSame(['speaking', 'experience'], $this->sectionSlugs($doc));
     }
+
+    public function testRetiredWordingStaysRetiredAndEmptyEntriesVanish(): void
+    {
+        $data = new \Resume\ResumeData(
+            sections: [new \Resume\SectionRow('summary', 'Summary', 0)],
+            entries: [
+                new \Resume\EntryRow(
+                    entry_id: 1,
+                    slug: 'objective',
+                    section_slug: 'summary',
+                    parent_entry_id: null,
+                    started_on: null,
+                    started_precision: null,
+                    ended_on: null,
+                    ended_precision: null,
+                    location: null,
+                    include_by_default: true,
+                    sort_hint: 0,
+                    tags: [],
+                    skills: [],
+                    links: [],
+                ),
+            ],
+            texts: [
+                new \Resume\TextRow(1, 1, 'summary', 'Old objective', '2007-06-14', '2022-09-21', 0, 0, []),
+            ],
+            contacts: [],
+            known_tags: [],
+        );
+        $builder = new \Resume\Builder();
+        $then = $builder->build($data, new Query('2026-10-11', '2010-01-01'));
+        $this->assertSame('Old objective', $then->sections[0]->entries[0]->summary, 'live in 2010');
+        $now = $builder->build($data, new Query('2026-10-11', '2026-10-11'));
+        $this->assertSame([], $now->sections, 'retired, so nothing left to show');
+    }
 }

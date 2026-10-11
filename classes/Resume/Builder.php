@@ -53,7 +53,13 @@ final class Builder
             }
             $rendered = [];
             foreach ($this->sorted($entries) as $entry) {
-                $rendered[] = $this->render($entry, $children, $texts_by_entry, $query);
+                $one = $this->render($entry, $children, $texts_by_entry, $query);
+                if (self::hasContent($one)) {
+                    $rendered[] = $one;
+                }
+            }
+            if ($rendered === []) {
+                continue;
             }
             $sections[] = new RenderedSection($section->slug, $section->heading, $rendered);
         }
@@ -133,7 +139,7 @@ final class Builder
                 $best = $text;
             }
         }
-        return ($best ?? $this->nearest($candidates, $query->wording_as_of))->body;
+        return ($best ?? $this->nearest($candidates, $query->wording_as_of))?->body;
     }
 
     /** @return array{int, int, int, string, int} bigger is better */
@@ -145,28 +151,24 @@ final class Builder
     }
 
     /**
-     * Nothing was in use on $date. Take the last wording written before it,
-     * else the first written after it, so the field never goes blank.
+     * Nothing was in use on $date. If a wording had been written by then, it
+     * was retired on purpose, so the field stays empty. If none had been
+     * written yet, use the first one, so an old view never goes blank.
      *
      * @param non-empty-list<TextRow> $candidates
      */
-    private function nearest(array $candidates, string $date): TextRow
+    private function nearest(array $candidates, string $date): ?TextRow
     {
-        $before = null;
         $first = $candidates[0];
         foreach ($candidates as $text) {
-            $key = [$text->written_on, $text->entry_text_id];
-            if (
-                $text->written_on <= $date
-                && ($before === null || ($key <=> [$before->written_on, $before->entry_text_id]) > 0)
-            ) {
-                $before = $text;
+            if ($text->written_on <= $date) {
+                return null;
             }
-            if (($key <=> [$first->written_on, $first->entry_text_id]) < 0) {
+            if (([$text->written_on, $text->entry_text_id] <=> [$first->written_on, $first->entry_text_id]) < 0) {
                 $first = $text;
             }
         }
-        return $before ?? $first;
+        return $first;
     }
 
     /**
@@ -190,6 +192,13 @@ final class Builder
                 => [$a->sort_order, $a->entry_text_id] <=> [$b->sort_order, $b->entry_text_id]
         );
         return array_map(static fn (TextRow $t): string => $t->body, $bullets);
+    }
+
+    /** An entry whose every wording is retired has nothing left to say. */
+    private static function hasContent(RenderedEntry $entry): bool
+    {
+        return $entry->title !== null || $entry->org_name !== null || $entry->summary !== null
+            || $entry->bullets !== [] || $entry->children !== [];
     }
 
     private static function isLive(TextRow $text, string $date): bool
