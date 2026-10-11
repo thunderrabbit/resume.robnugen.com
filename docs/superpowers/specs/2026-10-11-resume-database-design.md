@@ -200,19 +200,22 @@ CREATE TABLE tags (
 );
 
 CREATE TABLE entry_tags (
-  entry_id INT UNSIGNED NOT NULL, tag_id INT UNSIGNED NOT NULL,
+  entry_id INT UNSIGNED NOT NULL,
+  tag_id INT UNSIGNED NOT NULL,
   PRIMARY KEY (entry_id, tag_id),
   FOREIGN KEY (entry_id) REFERENCES entries (entry_id),
   FOREIGN KEY (tag_id) REFERENCES tags (tag_id)
 );
 CREATE TABLE entry_text_tags (
-  entry_text_id INT UNSIGNED NOT NULL, tag_id INT UNSIGNED NOT NULL,
+  entry_text_id INT UNSIGNED NOT NULL,
+  tag_id INT UNSIGNED NOT NULL,
   PRIMARY KEY (entry_text_id, tag_id),
   FOREIGN KEY (entry_text_id) REFERENCES entry_texts (entry_text_id),
   FOREIGN KEY (tag_id) REFERENCES tags (tag_id)
 );
 CREATE TABLE contact_point_tags (
-  contact_point_id INT UNSIGNED NOT NULL, tag_id INT UNSIGNED NOT NULL,
+  contact_point_id INT UNSIGNED NOT NULL,
+  tag_id INT UNSIGNED NOT NULL,
   PRIMARY KEY (contact_point_id, tag_id),
   FOREIGN KEY (contact_point_id) REFERENCES contact_points (contact_point_id),
   FOREIGN KEY (tag_id) REFERENCES tags (tag_id)
@@ -228,13 +231,15 @@ CREATE TABLE profiles (
   is_public      TINYINT(1) NOT NULL DEFAULT 0   -- exactly one row serves the public PDF
 );
 CREATE TABLE profile_tags (
-  profile_id INT UNSIGNED NOT NULL, tag_id INT UNSIGNED NOT NULL,
+  profile_id INT UNSIGNED NOT NULL,
+  tag_id INT UNSIGNED NOT NULL,
   PRIMARY KEY (profile_id, tag_id),
   FOREIGN KEY (profile_id) REFERENCES profiles (profile_id),
   FOREIGN KEY (tag_id) REFERENCES tags (tag_id)
 );
 CREATE TABLE profile_sections (
-  profile_id INT UNSIGNED NOT NULL, section_id INT UNSIGNED NOT NULL,
+  profile_id INT UNSIGNED NOT NULL,
+  section_id INT UNSIGNED NOT NULL,
   section_order SMALLINT NOT NULL,
   PRIMARY KEY (profile_id, section_id),
   FOREIGN KEY (profile_id) REFERENCES profiles (profile_id),
