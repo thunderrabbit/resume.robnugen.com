@@ -14,5 +14,5 @@ namespace Version;
  */
 final class Site
 {
-    public const SEMVER = '0.1';
+    public const SEMVER = '0.1.0';
 }
