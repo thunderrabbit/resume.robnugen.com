@@ -94,7 +94,10 @@ final class Builder
 
         $rendered_children = [];
         foreach ($this->sorted($children[$entry->entry_id] ?? []) as $child) {
-            $rendered_children[] = $this->render($child, $children, $texts_by_entry, $query);
+            $one = $this->render($child, $children, $texts_by_entry, $query);
+            if (self::hasContent($one)) {
+                $rendered_children[] = $one;
+            }
         }
 
         return new RenderedEntry(

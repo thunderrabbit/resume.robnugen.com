@@ -174,4 +174,36 @@ class ResumeBuilderTest extends Unit
         $now = $builder->build($data, new Query('2026-10-11', '2026-10-11'));
         $this->assertSame([], $now->sections, 'retired, so nothing left to show');
     }
+
+    public function testChildWithOnlyRetiredWordingVanishes(): void
+    {
+        $entry = static fn (int $id, string $slug, ?int $parent): \Resume\EntryRow => new \Resume\EntryRow(
+            entry_id: $id,
+            slug: $slug,
+            section_slug: 'education',
+            parent_entry_id: $parent,
+            started_on: '1990-09-01',
+            started_precision: 'month',
+            ended_on: '1995-05-01',
+            ended_precision: 'month',
+            location: null,
+            include_by_default: true,
+            sort_hint: 0,
+            tags: [],
+            skills: [],
+            links: [],
+        );
+        $data = new \Resume\ResumeData(
+            sections: [new \Resume\SectionRow('education', 'Education', 0)],
+            entries: [$entry(1, 'school', null), $entry(2, 'club', 1)],
+            texts: [
+                new \Resume\TextRow(1, 1, 'title', 'B.S.', '2005-01-01', null, 0, 0, []),
+                new \Resume\TextRow(2, 2, 'title', 'Club', '2005-01-01', '2010-01-01', 0, 0, []),
+            ],
+            contacts: [],
+            known_tags: [],
+        );
+        $doc = (new \Resume\Builder())->build($data, new Query('2026-10-11', '2026-10-11'));
+        $this->assertSame([], $doc->sections[0]->entries[0]->children);
+    }
 }
