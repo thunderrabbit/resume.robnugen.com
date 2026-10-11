@@ -5,10 +5,25 @@ declare(strict_types=1);
 namespace Resume;
 
 /**
- * What to render. Task 5 adds the properties and fromRequest().
+ * What to render: which moment, which wording, which audience.
+ *
+ * Dates are 'Y-m-d' strings. ISO dates compare correctly as strings, which
+ * keeps every comparison identical in PHP, MySQL and SQLite.
  */
 final class Query
 {
+    /**
+     * @param list<string>      $tags          requested tag slugs, empty = the default résumé
+     * @param list<string>|null $section_slugs sections in render order, null = all, by default order
+     */
+    public function __construct(
+        public readonly string $as_of,
+        public readonly string $wording_as_of,
+        public readonly array $tags = [],
+        public readonly ?array $section_slugs = null,
+    ) {
+    }
+
     /** A real calendar date written as YYYY-MM-DD. */
     public static function isDate(mixed $value): bool
     {
