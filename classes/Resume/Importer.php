@@ -91,7 +91,7 @@ final class Importer
     {
         foreach (self::objects($doc, 'tags', 'tags') as $i => $tag) {
             $where = "tags[$i]";
-            $slug = self::str($tag, 'slug', $where);
+            $slug = self::str($tag, 'slug', $where, 40);
             self::unique($this->tag_ids, $slug, $where);
             $this->tag_ids[$slug] = $this->insert('tags', [
                 'tag_slug' => $slug,
@@ -109,9 +109,9 @@ final class Importer
             self::unique($this->source_ids, $key, $where);
             $this->source_ids[$key] = $this->insert('sources', [
                 'captured_on' => self::date($source, 'captured_on', $where),
-                'source_title' => self::str($source, 'title', $where),
-                'history_path' => self::optStr($source, 'history_path', $where),
-                'origin' => self::optStr($source, 'origin', $where),
+                'source_title' => self::str($source, 'title', $where, 255),
+                'history_path' => self::optStr($source, 'history_path', $where, 255),
+                'origin' => self::optStr($source, 'origin', $where, 255),
             ]);
         }
     }
@@ -121,11 +121,11 @@ final class Importer
     {
         foreach (self::objects($doc, 'sections', 'sections') as $i => $section) {
             $where = "sections[$i]";
-            $slug = self::str($section, 'slug', $where);
+            $slug = self::str($section, 'slug', $where, 40);
             self::unique($this->section_ids, $slug, $where);
             $this->section_ids[$slug] = $this->insert('sections', [
                 'section_slug' => $slug,
-                'heading' => self::str($section, 'heading', $where),
+                'heading' => self::str($section, 'heading', $where, 100),
                 'default_order' => self::int($section, 'order', $i * 10, $where),
             ]);
         }
@@ -136,13 +136,13 @@ final class Importer
     {
         foreach (self::objects($doc, 'organizations', 'organizations') as $i => $org) {
             $where = "organizations[$i]";
-            $slug = self::str($org, 'slug', $where);
+            $slug = self::str($org, 'slug', $where, 60);
             self::unique($this->org_ids, $slug, $where);
             $this->org_ids[$slug] = $this->insert('organizations', [
                 'org_slug' => $slug,
-                'city' => self::optStr($org, 'city', $where),
-                'country' => self::optStr($org, 'country', $where),
-                'org_url' => self::optStr($org, 'url', $where),
+                'city' => self::optStr($org, 'city', $where, 100),
+                'country' => self::optStr($org, 'country', $where, 100),
+                'org_url' => self::optStr($org, 'url', $where, 255),
             ]);
         }
     }
@@ -152,11 +152,11 @@ final class Importer
     {
         foreach (self::objects($doc, 'skills', 'skills') as $i => $skill) {
             $where = "skills[$i]";
-            $name = self::str($skill, 'name', $where);
+            $name = self::str($skill, 'name', $where, 100);
             self::unique($this->skill_ids, $name, $where);
             $this->skill_ids[$name] = $this->insert('skills', [
                 'skill_name' => $name,
-                'skill_category' => self::optStr($skill, 'category', $where),
+                'skill_category' => self::optStr($skill, 'category', $where, 40),
             ]);
         }
     }
@@ -168,7 +168,7 @@ final class Importer
         $parents = [];
         foreach (self::objects($doc, 'entries', 'entries') as $i => $entry) {
             $where = "entries[$i]";
-            $slug = self::str($entry, 'slug', $where);
+            $slug = self::str($entry, 'slug', $where, 80);
             self::unique($this->entry_ids, $slug, $where);
 
             $started_on = self::optDate($entry, 'started_on', $where);
@@ -179,17 +179,20 @@ final class Importer
             $org = self::optStr($entry, 'organization', $where);
             $source = self::optStr($entry, 'source', $where);
 
+            $started_precision = self::optOneOf($entry, 'started_precision', self::PRECISIONS, $where)
+                ?? ($started_on === null ? null : 'month');
+
             $entry_id = $this->insert('entries', [
                 'section_id' => self::ref($this->section_ids, self::str($entry, 'section', $where), 'section', $where),
                 'organization_id' => $org === null ? null : self::ref($this->org_ids, $org, 'organization', $where),
                 'entry_slug' => $slug,
                 'started_on' => $started_on,
-                'started_precision' => self::optOneOf($entry, 'started_precision', self::PRECISIONS, $where)
-                    ?? ($started_on === null ? null : 'month'),
+                'started_precision' => $started_precision,
                 'ended_on' => $ended_on,
+                // A talk given as "day" precision ends at day precision too.
                 'ended_precision' => self::optOneOf($entry, 'ended_precision', self::PRECISIONS, $where)
-                    ?? ($ended_on === null ? null : 'month'),
-                'location_text' => self::optStr($entry, 'location', $where),
+                    ?? ($ended_on === null ? null : ($started_precision ?? 'month')),
+                'location_text' => self::optStr($entry, 'location', $where, 150),
                 'include_by_default' => self::bool($entry, 'include_by_default', true, $where) ? 1 : 0,
                 'sort_hint' => self::int($entry, 'sort_hint', 0, $where),
                 'private_note' => self::optStr($entry, 'private_note', $where),
@@ -217,8 +220,8 @@ final class Importer
             foreach (self::objects($entry, 'links', "$where.links") as $j => $link) {
                 $this->insert('entry_links', [
                     'entry_id' => $entry_id,
-                    'url' => self::str($link, 'url', "$where.links[$j]"),
-                    'link_kind' => self::optStr($link, 'kind', "$where.links[$j]"),
+                    'url' => self::str($link, 'url', "$where.links[$j]", 500),
+                    'link_kind' => self::optStr($link, 'kind', "$where.links[$j]", 40),
                 ]);
             }
             foreach (self::objects($entry, 'texts', "$where.texts") as $j => $text) {
@@ -284,7 +287,7 @@ final class Importer
             $where = "contact_points[$i]";
             $contact_id = $this->insert('contact_points', [
                 'contact_kind' => self::oneOf($contact, 'kind', self::CONTACT_KINDS, $where),
-                'contact_value' => self::str($contact, 'value', $where),
+                'contact_value' => self::str($contact, 'value', $where, 255),
                 'valid_from' => self::optDate($contact, 'valid_from', $where),
                 'valid_until' => self::optDate($contact, 'valid_until', $where),
                 'priority' => self::int($contact, 'priority', 0, $where),
@@ -305,13 +308,13 @@ final class Importer
         $public = 0;
         foreach (self::objects($doc, 'profiles', 'profiles') as $i => $profile) {
             $where = "profiles[$i]";
-            $slug = self::str($profile, 'slug', $where);
+            $slug = self::str($profile, 'slug', $where, 60);
             self::unique($this->profile_ids, $slug, $where);
             $is_public = self::bool($profile, 'is_public', false, $where);
             $public += $is_public ? 1 : 0;
             $profile_id = $this->insert('profiles', [
                 'profile_slug' => $slug,
-                'profile_title' => self::str($profile, 'title', $where),
+                'profile_title' => self::str($profile, 'title', $where, 150),
                 'as_of' => self::optDate($profile, 'as_of', $where),
                 'wording_as_of' => self::optDate($profile, 'wording_as_of', $where),
                 'is_public' => $is_public ? 1 : 0,
@@ -391,18 +394,30 @@ final class Importer
         return $strings;
     }
 
-    /** @param array<mixed> $a */
-    private static function str(array $a, string $key, string $where): string
+    /**
+     * $max is the column's VARCHAR length, so --check refuses what MySQL would.
+     *
+     * @param array<mixed> $a
+     */
+    private static function str(array $a, string $key, string $where, int $max = 0): string
     {
         $value = $a[$key] ?? null;
         if (!is_string($value) || trim($value) === '') {
             throw new ImportException("$where: '$key' must be a non-empty string");
         }
+        return self::fits($value, $key, $where, $max);
+    }
+
+    private static function fits(string $value, string $key, string $where, int $max): string
+    {
+        if ($max > 0 && mb_strlen($value) > $max) {
+            throw new ImportException("$where: '$key' must be at most $max characters");
+        }
         return $value;
     }
 
     /** @param array<mixed> $a */
-    private static function optStr(array $a, string $key, string $where): ?string
+    private static function optStr(array $a, string $key, string $where, int $max = 0): ?string
     {
         $value = $a[$key] ?? null;
         if ($value === null || $value === '') {
@@ -411,7 +426,7 @@ final class Importer
         if (!is_string($value)) {
             throw new ImportException("$where: '$key' must be a string or null");
         }
-        return $value;
+        return self::fits($value, $key, $where, $max);
     }
 
     /** @param array<mixed> $a */
@@ -476,11 +491,19 @@ final class Importer
         return self::optStr($a, $key, $where) === null ? null : self::oneOf($a, $key, $allowed, $where);
     }
 
-    /** @param array<string, int> $ids */
+    /**
+     * MySQL's unique keys ignore case and trailing spaces, so this does too:
+     * otherwise --check would pass a document the real import then refuses.
+     *
+     * @param array<string, int> $ids
+     */
     private static function unique(array $ids, string $slug, string $where): void
     {
-        if (isset($ids[$slug])) {
-            throw new ImportException("$where: duplicate '$slug'");
+        $normal = mb_strtolower(rtrim($slug));
+        foreach (array_keys($ids) as $taken) {
+            if (mb_strtolower(rtrim((string) $taken)) === $normal) {
+                throw new ImportException("$where: duplicate '$slug'");
+            }
         }
     }
 

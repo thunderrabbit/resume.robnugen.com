@@ -126,4 +126,25 @@ class ResumeImporterTest extends Unit
         $this->expectExceptionMessage("entries[0].texts[1]: retired before it was written");
         $this->importEdited(ResumeFixture::emptyPdo(), ['entries', 0, 'texts', 1, 'retired_on'], '2011-01-01');
     }
+
+    public function testDuplicateSlugIgnoresCaseLikeMysql(): void
+    {
+        $this->expectExceptionMessage("entries[1]: duplicate 'ACME'");
+        $this->importEdited(ResumeFixture::emptyPdo(), ['entries', 1, 'slug'], 'ACME');
+    }
+
+    public function testOverlongSlugIsRejectedBeforeMysqlWould(): void
+    {
+        $this->expectExceptionMessage("entries[1]: 'slug' must be at most 80 characters");
+        $this->importEdited(ResumeFixture::emptyPdo(), ['entries', 1, 'slug'], str_repeat('x', 81));
+    }
+
+    public function testEndPrecisionDefaultsToStartPrecision(): void
+    {
+        $pdo = ResumeFixture::emptyPdo();
+        $this->importEdited($pdo, ['entries', 1, 'ended_precision'], null);
+        $stmt = $pdo->query("SELECT ended_precision FROM entries WHERE entry_slug = 'talk'");
+        $this->assertNotFalse($stmt);
+        $this->assertSame('day', $stmt->fetchColumn());
+    }
 }

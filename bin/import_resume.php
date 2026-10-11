@@ -35,7 +35,9 @@ if ($check) {
 
 try {
     $counts = (new \Resume\Importer($pdo))->import($json);
-} catch (\Resume\ImportException $e) {
+} catch (\Resume\ImportException | \PDOException $e) {
+    // A PDOException means MySQL refused something --check could not foresee.
+    // The transaction rolled back, so the live resume is unchanged either way.
     fwrite(STDERR, 'Not imported: ' . $e->getMessage() . "\n");
     exit(1);
 }
