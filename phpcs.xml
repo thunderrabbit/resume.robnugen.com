@@ -13,6 +13,7 @@
     <file>wwwroot</file>
     <file>prepend.php</file>
     <file>Tests</file>
+    <file>bin</file>
     <exclude-pattern>*/vendor/*</exclude-pattern>
     <exclude-pattern>*/Tests/_output/*</exclude-pattern>
     <exclude-pattern>*/Tests/Support/_generated/*</exclude-pattern>

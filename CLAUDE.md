@@ -282,3 +282,30 @@ All three must pass (or the change is not commit-ready). Setup and fixing:
 - The sentinel error `YallGotAnyMoreOfThemUsers` is what triggers the registration redirect
 - All PHP errors are displayed to screen during development (`ini_set` calls at the top of `prepend.php`)
 - Template system supports debug context via `?debug=1` parameter
+
+## Résumé data
+
+- **Public code, private data.** The résumé itself is one JSON document in the
+  private repo `~/work/rob/jobhunt/resume_private/` (`resume.json`). This repo never
+  holds real résumé data, seed SQL, dumps or generated PDFs. Tests use the invented
+  Pat Example in `Tests/Unit/ResumeFixture.php`, which is also the worked example of
+  the JSON format (keys listed in the plan, `docs/superpowers/plans/2026-10-11-resume-builder.md`, Task 3).
+- **Validate** without a database (runs anywhere the runner image is):
+
+      docker run --rm -i --network none -v "$PWD":/app:ro -w /app \
+        standards-codeception-runner:php8.3 php bin/import_resume.php --check \
+        < ../resume_private/resume.json
+
+- **Import** (replaces every résumé row in one transaction, so a bad document changes nothing):
+
+      ssh resume 'php resume.robnugen.com/bin/import_resume.php' < ../resume_private/resume.json
+
+- **Publish the PDF** after each import: `bin/publish_pdf.sh`. It prints the public page with
+  headless Chrome on this machine and rsyncs `Rob_Nugen_resume.pdf` into the server's `wwwroot/`.
+- **Tables** come from `db_schemas/03_resume/create_resume_tables.sql`, applied once from
+  `/admin/migrate_tables.php`. The SQLite copy in `classes/Resume/SqliteSchema.php` must
+  match it, and `ResumeSchemaFilesTest` fails if they drift.
+- **Choosing** (which entries, which wording, which contacts) is all in `Resume\Builder`,
+  per the spec. `/tailor/` (admin only) is the click-clack page.
+- **One-day events** (a talk) set `ended_on` equal to `started_on`. A null `ended_on`
+  means "ongoing" and prints "Present".

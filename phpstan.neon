@@ -6,6 +6,7 @@ parameters:
         - wwwroot
         - prepend.php
         - Tests
+        - bin
     excludePaths:
         analyseAndScan:
             # Per-site and gitignored; ConfigSample declares the same class.
