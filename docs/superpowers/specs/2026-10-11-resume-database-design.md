@@ -15,7 +15,7 @@ holds no layout, fonts, column alignment, or page breaks.
 This repo is public. Résumé data is not. Past versions, seed data
 and database dumps hold a street address, phone numbers and private
 notes, so they live in a separate repo that is never published (on
-Rob's machine at `../resume_private/`). Nothing personal is committed
+Rob's machine at `/home/thunderrabbit/work/rob/jobhunt/resume_private`). Nothing personal is committed
 here: no seed SQL, no exports, no sample PDFs built from real data.
 Tests and examples use invented data.
 
