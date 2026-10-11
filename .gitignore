@@ -13,3 +13,6 @@ Tests/_envs/
 Tests/Support/_generated/*
 !Tests/Support/_generated/.gitkeep
 *~
+
+# Published resume PDFs hold personal data. bin/publish_pdf.sh uploads them.
+wwwroot/*.pdf
