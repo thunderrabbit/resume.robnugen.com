@@ -210,7 +210,21 @@ the current file. The URL only has to change.
   gitignored; the sample is not.
 - `DEST_PATH` is the **project root** on the server (the directory holding `wwwroot/`,
   `classes/`, `prepend.php`), not the web root.
-- Do not deploy by pushing to a git remote. Commits are for history, not transport.
+
+### Deploying a branch
+- `./deploy.sh` (or `/deploy` in chat) pushes the checked-out branch to GitHub, then the
+  server checks out the same branch and fast-forwards it to `origin/<branch>`. Dry-run
+  with `./deploy.sh --dry-run`. The server's `~/resume.robnugen.com/` is a clone that
+  pulls from GitHub.
+- It refuses to deploy over uncommitted tracked changes on either end, and refuses a
+  non-fast-forward. Resolve those by hand; never `restore`/`reset` the server's edits
+  away unasked.
+- The first bulk copy of a *new* site (above) is still rsync. The sync-watch script is
+  still for editing against a live server, and edits it leaves on the server block the
+  next deploy until committed here.
+- A deploy ships code only. New `db_schemas/02_*` onward still need applying at
+  `/admin/migrate_tables.php`, and résumé data changes need `bin/import_resume.php`
+  (see "Résumé data" below).
 
 ### Database Operations
 - Visit `/admin/migrate_tables.php` to manually apply pending migrations
